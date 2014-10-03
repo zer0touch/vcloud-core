@@ -16,14 +16,20 @@ module Vcloud
                        :get_execute_query, :get_vapp_metadata, :power_off_vapp, :shutdown_vapp, :session,
                        :post_instantiate_vapp_template, :put_memory, :put_cpu, :power_on_vapp, :put_vapp_metadata_value,
                        :put_vm, :get_edge_gateway, :get_network_complete, :delete_network, :post_create_org_vdc_network,
-                       :post_configure_edge_gateway_services, :get_vdc, :post_undeploy_vapp
+                       :post_configure_edge_gateway_services, :get_vdc, :post_undeploy_vapp, :get_vapp_template,
+                       :post_recompose_vapp
 
         #########################
         # FogFacade Inner class to represent a logic free facade over our interactions with Fog
 
         class FogFacade
           def initialize
+            ::Fog.timeout = Vcloud::Core::TIMEOUT
             @vcloud = ::Fog::Compute::VcloudDirector.new
+          end
+
+          def get_vapp_template(id)
+            @vcloud.get_vapp_template(id).body
           end
 
           def get_vdc(id)
@@ -40,6 +46,13 @@ module Vcloud
 
           def get_vapps_in_lease_from_query(options)
             @vcloud.get_vapps_in_lease_from_query(options).body
+          end
+
+          def post_recompose_vapp(vapp_id, config)
+            Vcloud::Core.logger.debug("recomposing #{config[:vapp_name]} vapp in #{config[:vdc_name]}")
+            vapp = @vcloud.post_recompose_vapp(vapp_id, config).body
+            @vcloud.process_task(vapp)
+            @vcloud.get_vapp(extract_id(vapp[:Owner])).body
           end
 
           def post_instantiate_vapp_template(vdc, template, name, params)

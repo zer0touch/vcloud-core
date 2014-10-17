@@ -23,6 +23,10 @@ module Vcloud
         vcloud_attributes[:name]
       end
 
+      def vm_href
+        vcloud_attributes[:Children][:Vm][:href]
+      end
+
       def self.get_ids_by_name_and_catalog name, catalog_name
         raise "provide Catalog and vAppTemplate name" unless name && catalog_name
         q = Vcloud::Core::QueryRunner.new

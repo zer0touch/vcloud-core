@@ -2,7 +2,9 @@ require 'open3'
 require 'vcloud/core/timeout'
 require 'vcloud/core/fog'
 require 'vcloud/core/api_interface'
+
 require 'vcloud/core/version'
+
 require 'vcloud/core/config_loader'
 require 'vcloud/core/config_validator'
 require 'vcloud/core/entity'

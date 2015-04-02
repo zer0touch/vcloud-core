@@ -35,11 +35,18 @@ module Vcloud
         vcloud_attributes[:name]
       end
 
+<<<<<<< HEAD
       # Get a list of templates with a particular name in a catalog
       #
       # @param name [String] The name of the vAppTemplate to find
       # @param catalog_name [String] The name of the catalog to search
       # @return [Array] an array of IDs of matching templates
+=======
+      def vm_href
+        vcloud_attributes[:Children][:Vm][:href]
+      end
+
+>>>>>>> 7eafa574a9e1b384cec8e10be2ac21ed4f206418
       def self.get_ids_by_name_and_catalog name, catalog_name
         raise "provide Catalog and vAppTemplate name" unless name && catalog_name
         q = Vcloud::Core::QueryRunner.new

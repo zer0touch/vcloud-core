@@ -1,4 +1,5 @@
 require 'open3'
+require 'vcloud/core/timeout'
 require 'vcloud/core/fog'
 require 'vcloud/core/api_interface'
 

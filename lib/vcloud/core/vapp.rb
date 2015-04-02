@@ -76,11 +76,20 @@ module Vcloud
         vcloud_attributes[:href]
       end
 
+<<<<<<< HEAD
       # Return the ID of the vDC containing vApp
       #
       # @return [String] the ID of the vDC containing vApp
+=======
+      def vm_href
+        vms.first[:href]
+      end
+
+>>>>>>> 7eafa574a9e1b384cec8e10be2ac21ed4f206418
       def vdc_id
-        link = vcloud_attributes[:Link].detect { |l| l[:rel] == Fog::RELATION::PARENT && l[:type] == Fog::ContentTypes::VDC }
+        link = vcloud_attributes[:Link].detect do |l|
+          l[:rel] == Fog::RELATION::PARENT && l[:type] == Fog::ContentTypes::VDC
+        end
         link ? link[:href].split('/').last : raise('a vapp without parent vdc found')
       end
 
@@ -109,6 +118,7 @@ module Vcloud
         self.new(attrs[:href].split('/').last) if attrs && attrs.key?(:href)
       end
 
+<<<<<<< HEAD
       # Instantiate a vApp
       #
       # @param name [String] Name to use when creating the vApp
@@ -117,19 +127,27 @@ module Vcloud
       # @param vdc_name [String] The name of the vDC to create vApp in
       # @return [String] the id of the created vApp
       def self.instantiate(name, network_names, template_id, vdc_name)
+=======
+      def self.instantiate(name, template_id, vdc_name, org_networks, vapp_networks)
+>>>>>>> 7eafa574a9e1b384cec8e10be2ac21ed4f206418
         Vcloud::Core.logger.info("Instantiating new vApp #{name} in vDC '#{vdc_name}'")
         fog_interface = Vcloud::Core::Fog::ServiceInterface.new
-        networks = get_networks(network_names, vdc_name)
+
+        networks = get_org_networks(org_networks, vdc_name)
+        params = build_network_config(networks)
+        params[:NetworkConfigSection][:NetworkConfig] +=
+          build_vapp_network_config(vapp_networks, vdc_name)
 
         attrs = fog_interface.post_instantiate_vapp_template(
             fog_interface.vdc(vdc_name),
             template_id,
             name,
-            InstantiationParams: build_network_config(networks)
+            InstantiationParams: params
         )
         self.new(attrs[:href].split('/').last) if attrs and attrs.key?(:href)
       end
 
+<<<<<<< HEAD
       # Update custom_fields for vApp
       #
       # @param custom_fields [Array] Array of Hashes describing the custom fields
@@ -157,6 +175,54 @@ module Vcloud
       # Power on vApp
       #
       # @return [Boolean] Returns true if the VM is running, false otherwise
+=======
+      def self.get_vapp_networks(vapp_networks, vdc_name)
+        vapp_networks.collect do |network|
+          output = {
+            :name => network[:name],
+            :fence_mode => fence_mode(network[:fence_mode])
+          }
+          if network[:parent_network]
+            parent_network_href = get_org_networks([network[:parent_network]], vdc_name).first.
+              fetch(:href) { raise "Cannot find link for parent network #{network[:parent_network]}" }
+            output.merge!({ href: parent_network_href })
+          end
+          output
+        end
+      end
+
+      def recompose(vapp_name, vdc_name, vm_config, org_networks, vapp_networks)
+        Vcloud::Core.logger.info("Recomposing vApp #{vapp_name} to add VM #{vm_config[:name] || vapp_name}")
+        fog_interface = Vcloud::Core::Fog::ServiceInterface.new
+
+        vm_config[:href] ||= vm_href
+        vm_config[:networks] = vm_network_config(vm_config[:network_connections])
+
+        fog_config = {}
+        fog_config[:vapp_name] = vapp_name
+        fog_config[:source_vms] = [vm_config]
+        org_network_params = self.class.get_org_networks(org_networks, vdc_name)
+        vapp_network_params = self.class.get_vapp_networks(vapp_networks, vdc_name)
+        fog_config[:InstantiationParams] =
+          self.class.build_network_config(org_network_params + vapp_network_params)
+
+        fog_interface.post_recompose_vapp(id, fog_config)
+
+        self
+      end
+
+      def vm_network_config(network_configs)
+        network_configs.collect do |config|
+          new_config = {}
+          new_config[:networkName] = config[:name]
+          new_config[:IpAddress] = config[:ip_address]
+          new_config[:IpAddressAllocationMode] = (config[:allocation_mode] || 'manual').upcase
+          new_config[:IsConnected] = 'true'
+          new_config
+        end
+      end
+
+>>>>>>> 7eafa574a9e1b384cec8e10be2ac21ed4f206418
       def power_on
         raise "Cannot power on a missing vApp." unless id
         return true if running?
@@ -173,26 +239,74 @@ module Vcloud
 
       def self.build_network_config(networks)
         return {} unless networks
-        instantiation = { NetworkConfigSection: {NetworkConfig: []} }
+        instantiation = { NetworkConfigSection: { NetworkConfig: [] } }
         networks.compact.each do |network|
-          instantiation[:NetworkConfigSection][:NetworkConfig] << {
-              networkName: network[:name],
-              Configuration: {
-                  ParentNetwork: {href: network[:href]},
-                  FenceMode: 'bridged',
-              }
+          network_config = {
+            networkName: network[:name],
+            Configuration: {
+              FenceMode: fence_mode(network[:fence_mode])
+            }
           }
+
+          unless network_config[:Configuration][:FenceMode] == 'isolated'
+            network_config[:Configuration][:ParentNetwork] = { href: network[:href] }
+          end
+
+          instantiation[:NetworkConfigSection][:NetworkConfig] << network_config
         end
         instantiation
+      end
+
+      def self.fence_mode(mode)
+        return 'natRouted' unless mode
+        case mode
+        when /^nat/
+          'natRouted'
+        when /^iso/
+          'isolated'
+        end
+      end
+
+      def self.build_vapp_network_config(networks, vdc_name=nil)
+        return [] unless networks
+        config = []
+        networks.compact.each do |network|
+          network_config = {
+            networkName: network[:name],
+            Configuration: {
+              IpScopes: {
+                IpScope: {
+                  IsInherited: false,
+                  Gateway: network[:gateway],
+                  Netmask: network[:netmask],
+                  IpRanges: {
+                    IpRange: {
+                      StartAddress: network[:start_address],
+                      EndAddress: network[:end_address],
+                    },
+                  },
+                },
+              },
+              FenceMode: fence_mode(network[:fence_mode]),
+            }
+          }
+          unless network_config[:Configuration][:FenceMode] == 'isolated'
+            parent_network_href = get_org_networks([network.fetch(:parent_network)], vdc_name).first.
+              fetch(:href) { raise "Cannot find link for parent network #{network.fetch(:parent_network)}" }
+            network_config[:Configuration][:ParentNetwork] = { href: parent_network_href }
+          end
+          config << network_config
+        end
+        config
       end
 
       def self.id_prefix
         'vapp'
       end
 
-      def self.get_networks(network_names, vdc_name)
+      def self.get_org_networks(org_networks, vdc_name)
         fsi = Vcloud::Core::Fog::ServiceInterface.new
-        fsi.find_networks(network_names, vdc_name) if network_names
+        fsi.find_networks(org_networks, vdc_name)
       end
     end
   end

@@ -76,16 +76,13 @@ module Vcloud
         vcloud_attributes[:href]
       end
 
-<<<<<<< HEAD
       # Return the ID of the vDC containing vApp
       #
       # @return [String] the ID of the vDC containing vApp
-=======
       def vm_href
         vms.first[:href]
       end
 
->>>>>>> 7eafa574a9e1b384cec8e10be2ac21ed4f206418
       def vdc_id
         link = vcloud_attributes[:Link].detect do |l|
           l[:rel] == Fog::RELATION::PARENT && l[:type] == Fog::ContentTypes::VDC
@@ -118,7 +115,6 @@ module Vcloud
         self.new(attrs[:href].split('/').last) if attrs && attrs.key?(:href)
       end
 
-<<<<<<< HEAD
       # Instantiate a vApp
       #
       # @param name [String] Name to use when creating the vApp
@@ -126,10 +122,7 @@ module Vcloud
       # @param template_id [String] The ID of the template to use when creating the vApp
       # @param vdc_name [String] The name of the vDC to create vApp in
       # @return [String] the id of the created vApp
-      def self.instantiate(name, network_names, template_id, vdc_name)
-=======
       def self.instantiate(name, template_id, vdc_name, org_networks, vapp_networks)
->>>>>>> 7eafa574a9e1b384cec8e10be2ac21ed4f206418
         Vcloud::Core.logger.info("Instantiating new vApp #{name} in vDC '#{vdc_name}'")
         fog_interface = Vcloud::Core::Fog::ServiceInterface.new
 
@@ -147,7 +140,6 @@ module Vcloud
         self.new(attrs[:href].split('/').last) if attrs and attrs.key?(:href)
       end
 
-<<<<<<< HEAD
       # Update custom_fields for vApp
       #
       # @param custom_fields [Array] Array of Hashes describing the custom fields
@@ -175,7 +167,6 @@ module Vcloud
       # Power on vApp
       #
       # @return [Boolean] Returns true if the VM is running, false otherwise
-=======
       def self.get_vapp_networks(vapp_networks, vdc_name)
         vapp_networks.collect do |network|
           output = {
@@ -222,7 +213,6 @@ module Vcloud
         end
       end
 
->>>>>>> 7eafa574a9e1b384cec8e10be2ac21ed4f206418
       def power_on
         raise "Cannot power on a missing vApp." unless id
         return true if running?

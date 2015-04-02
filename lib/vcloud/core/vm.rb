@@ -73,7 +73,11 @@ module Vcloud
       # @return [Boolean] return true or throw an error
       def update_name(new_name)
         fsi = Vcloud::Core::Fog::ServiceInterface.new
+        # Update the "vm name" in VDC listings
         fsi.put_vm(id, new_name) unless name == new_name
+        # The "computer name" (which becomes the system hostname via guest customization)
+        # gets updated when the guest customization method is called. See
+        # `configure_guest_customization_section` below. FIXME: Can it be moved here?
       end
 
       # Return the name of the vApp containing VM
@@ -171,12 +175,17 @@ module Vcloud
         Vcloud::Core::Fog::ServiceInterface.new.put_network_connection_system_section_vapp(id, section)
       end
 
+<<<<<<< HEAD
       # Configure guest customisation script
       #
       # @param preamble [String] A script to run when the VM is created
       # @return [Boolean] return true or throw an error
       def configure_guest_customization_section(preamble)
         Vcloud::Core::Fog::ServiceInterface.new.put_guest_customization_section(id, vapp_name, preamble)
+=======
+      def configure_guest_customization_section(vm_name, preamble)
+        Vcloud::Core::Fog::ServiceInterface.new.put_guest_customization_section(id, vm_name, preamble)
+>>>>>>> 7eafa574a9e1b384cec8e10be2ac21ed4f206418
       end
 
       # Update the storage profile of a VM

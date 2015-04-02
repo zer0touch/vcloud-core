@@ -11,15 +11,15 @@ module Vcloud
       # @api private
       class ServiceInterface
         extend Forwardable
+           def_delegators :@fog, :get_vapp, :organizations, :org_name, :delete_vapp, :vcloud_token, :end_point,
+                                    :get_execute_query, :get_vapp_metadata, :power_off_vapp, :shutdown_vapp, :session,
+                                                           :post_instantiate_vapp_template, :put_memory, :put_cpu, :power_on_vapp, :put_vapp_metadata_value,
+                                                                                  :put_vm, :get_edge_gateway, :get_network_complete, :delete_network, :post_create_org_vdc_network,
+                                                                                                         :post_configure_edge_gateway_services, :get_vdc, :post_undeploy_vapp,
+                                                                                                                                :post_create_disk, :get_disk, :delete_disk, :post_attach_disk,
+                                                                                                                                                       :get_vms_disk_attached_to, :post_detach_disk, :put_product_sections,
+                                                                                                                                                                              :logout, :get_vapp_template, :post_recompose_vapp
 
-        def_delegators :@fog, :get_vapp, :organizations, :org_name, :delete_vapp, :vcloud_token, :end_point,
-                       :get_execute_query, :get_vapp_metadata, :power_off_vapp, :shutdown_vapp, :session,
-                       :post_instantiate_vapp_template, :put_memory, :put_cpu, :power_on_vapp, :put_vapp_metadata_value,
-                       :put_vm, :get_edge_gateway, :get_network_complete, :delete_network, :post_create_org_vdc_network,
-                       :post_configure_edge_gateway_services, :get_vdc, :post_undeploy_vapp,
-                       :post_create_disk, :get_disk, :delete_disk, :post_attach_disk,
-                       :get_vms_disk_attached_to, :post_detach_disk, :put_product_sections,
-                       :logout, :get_vapp_template, :post_recompose_vapp
 
         #########################
         # FogFacade Inner class to represent a logic free facade over our interactions with Fog
